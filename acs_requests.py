@@ -6,10 +6,9 @@ from states import states
 import pandas as pd
 import numpy as np
 
-import seaborn as sns
 import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
-
+import seaborn as sns
+sns.reset_orig()
 
 #lists of PUMAs in NYC and SF
 nyc_PUMA = [3701,3702,3703,3704,3705,3706,3707,3708,3709,
@@ -36,7 +35,7 @@ def state_ACS_data(state):
 def combine_ACS(states = states.keys()):
     inf_list = [state_ACS_data(s) for s in states]
     out_df = pd.concat(inf_list)
-    print 'Data read in losslessly for {0} states:'.format(len(states)), len(out_df) == np.array([len(x) for x in inf_list]).sum()
+    print 'Data read in losslessly for {0} states: '.format(len(states)), len(out_df) == np.array([len(x) for x in inf_list]).sum()
     return out_df
 
 def split_city(data, PUMAs, city):
@@ -45,20 +44,22 @@ def split_city(data, PUMAs, city):
     out['city'] = city
     return out
 
-df = combine_ACS(states = ['NY','CA'])
-
+df = combine_ACS()
 df_nyc = split_city(df, nyc_PUMA, 'NYC')
 df_sf = split_city(df, sf_PUMA, 'SF')
-#df = pd.concat([df_nyc, df_sf])
 
 #Graph things!
-for d, l in zip([df_nyc, df_sf], ['NYC', 'SF']):
-    sns.kdeplot(d['HINCP'], shade = True, label = l, cut = 3)
+fig, ax = plt.subplots(figsize = (10,10))
+for d, l in zip([df_nyc, df_sf, df], ['NYC', 'SF', 'US']):
+    sns.kdeplot(d['HINCP'],shade = True, **{'label':l})
 
 plt.xlabel('Household Income')
 plt.ylabel('Density Estimate')
 plt.title('Kernel Density Estimate of Income Distribution,\nNYC and SF')
-plt.xlim((-60000,1000000))
-plt.ylim((0,0.000011))
+plt.xlim((min(min(df_nyc['HINCP']),min(df_sf['HINCP']),min(df['HINCP'])) - 10000,
+          max(max(df_nyc['HINCP']),max(df_sf['HINCP']),max(df['HINCP'])) + 10000))
+plt.ylim((0,0.000012))
+plt.legend()
 
-plt.show()
+#plt.show()
+plt.savefig('plot.png', bbox_inches = 'tight', pad_inches = 0.2)
